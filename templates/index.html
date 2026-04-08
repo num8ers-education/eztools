@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Domain Email Scraper & Sitemap Generator</title>
+    <meta name="description" content="Crawl any website domain to extract emails, generate XML sitemaps, and scrape paginated directories. Download results as CSV or XML." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+    <!-- ───────────────────── Background Blobs ───────────────────── -->
+    <div class="bg-blob bg-blob--1"></div>
+    <div class="bg-blob bg-blob--2"></div>
+    <div class="bg-blob bg-blob--3"></div>
+
+    <!-- ───────────────────── Header ───────────────────── -->
+    <header class="header" id="header">
+        <div class="header__logo">
+            <svg class="header__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>Domain Email Scraper</span>
+        </div>
+        <p class="header__tagline">Extract emails, generate sitemaps &amp; scrape paginated directories</p>
+    </header>
+
+    <!-- ───────────────────── Main ───────────────────── -->
+    <main class="main">
+
+        <!-- ── Input Card ── -->
+        <section class="card card--input" id="input-section">
+            <h1 class="card__title">Configure Crawl</h1>
+
+            <div class="form-grid">
+                <div class="form-group form-group--wide">
+                    <label for="url-input">Website URL</label>
+                    <input type="url" id="url-input" placeholder="e.g. https://example.com/faculty/directory" autocomplete="url" />
+                </div>
+                <div class="form-group">
+                    <label for="max-pages">Max Pages</label>
+                    <input type="number" id="max-pages" value="100" min="1" max="10000" />
+                </div>
+                <div class="form-group">
+                    <label for="crawl-delay">Delay (sec)</label>
+                    <input type="number" id="crawl-delay" value="0.5" min="0" step="0.1" />
+                </div>
+                <div class="form-group form-group--toggle">
+                    <label class="toggle">
+                        <input type="checkbox" id="include-subdomains" />
+                        <span class="toggle__slider"></span>
+                        <span class="toggle__label">Include subdomains</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Directory options (conditionally shown) -->
+            <div class="directory-options hidden" id="directory-options">
+                <p class="directory-options__title">Directory Extraction Options</p>
+                <div class="form-grid form-grid--3col">
+                    <div class="form-group">
+                        <label for="max-dir-pages">Max Listing Pages</label>
+                        <input type="number" id="max-dir-pages" value="100" min="1" max="1000" />
+                    </div>
+                    <div class="form-group">
+                        <label for="max-profile-pages">Max Profile Pages</label>
+                        <input type="number" id="max-profile-pages" value="500" min="1" max="5000" />
+                    </div>
+                    <div class="form-group">
+                        <label for="max-emails">Max Emails</label>
+                        <input type="number" id="max-emails" value="5000" min="1" max="50000" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row btn-row--multi">
+                <button class="btn btn--primary" id="btn-start" onclick="startScrape()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Extract Emails
+                </button>
+                <button class="btn btn--sitemap" id="btn-sitemap" onclick="startSitemap()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Generate Sitemap
+                </button>
+                <button class="btn btn--full" id="btn-full" onclick="startFull()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                    Full Crawl
+                </button>
+                <button class="btn btn--directory" id="btn-directory" onclick="startDirectory()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Directory Extract
+                </button>
+                <button class="btn btn--danger" id="btn-stop" onclick="stopScrape()" disabled>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                    Stop
+                </button>
+            </div>
+        </section>
+
+        <!-- ── Status Bar ── -->
+        <section class="card card--status hidden" id="status-section">
+            <div class="status-row">
+                <span class="status-indicator" id="status-dot"></span>
+                <span class="status-text" id="status-text">Idle</span>
+                <span class="status-badge" id="status-badge"></span>
+            </div>
+            <p class="status-url" id="status-current-url"></p>
+            <p class="pagination-indicator hidden" id="pagination-indicator"></p>
+            <div class="progress-bar">
+                <div class="progress-bar__fill" id="progress-fill"></div>
+            </div>
+        </section>
+
+        <!-- ── Standard Metrics (email/sitemap/full modes) ── -->
+        <section class="metrics hidden" id="metrics-section">
+            <div class="metric-card">
+                <span class="metric-card__value" id="metric-pages">0</span>
+                <span class="metric-card__label">Pages Visited</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="metric-queued">0</span>
+                <span class="metric-card__label">In Queue</span>
+            </div>
+            <div class="metric-card" id="metric-emails-card">
+                <span class="metric-card__value" id="metric-emails">0</span>
+                <span class="metric-card__label">Emails Found</span>
+            </div>
+            <div class="metric-card" id="metric-urls-card">
+                <span class="metric-card__value" id="metric-urls">0</span>
+                <span class="metric-card__label">URLs Found</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="metric-errors">0</span>
+                <span class="metric-card__label">Errors</span>
+            </div>
+        </section>
+
+        <!-- ── Directory Metrics (directory mode only) ── -->
+        <section class="metrics metrics--directory hidden" id="dir-metrics-section">
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-listings">0</span>
+                <span class="metric-card__label">Listing Pages</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-profiles">0</span>
+                <span class="metric-card__label">Profiles Visited</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-emails">0</span>
+                <span class="metric-card__label">Emails Found</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-discovered">0</span>
+                <span class="metric-card__label">Profiles Discovered</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-queued">0</span>
+                <span class="metric-card__label">In Queue</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-card__value" id="dir-metric-errors">0</span>
+                <span class="metric-card__label">Errors</span>
+            </div>
+        </section>
+
+        <!-- ── Email Results ── -->
+        <section class="card card--results hidden" id="results-section">
+            <div class="results-header">
+                <h2 class="card__title">Extracted Emails</h2>
+                <button class="btn btn--accent" id="btn-download" onclick="downloadCSV()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download CSV
+                </button>
+            </div>
+            <div class="table-wrap">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Email</th>
+                            <th>Source Page</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body"></tbody>
+                </table>
+                <p class="empty-state" id="empty-state">No emails found yet…</p>
+            </div>
+        </section>
+
+        <!-- ── Sitemap Results ── -->
+        <section class="card card--sitemap hidden" id="sitemap-section">
+            <div class="results-header">
+                <h2 class="card__title">Sitemap URLs</h2>
+                <button class="btn btn--sitemap-dl" id="btn-download-sitemap" onclick="downloadSitemap()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Sitemap XML
+                </button>
+            </div>
+            <div class="table-wrap">
+                <table id="sitemap-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sitemap-body"></tbody>
+                </table>
+                <p class="empty-state" id="sitemap-empty-state">No URLs discovered yet…</p>
+            </div>
+        </section>
+
+        <!-- ── Errors ── -->
+        <section class="card card--errors hidden" id="errors-section">
+            <h2 class="card__title">Errors</h2>
+            <ul id="errors-list"></ul>
+        </section>
+
+    </main>
+
+    <!-- ───────────────────── Footer ───────────────────── -->
+    <footer class="footer">
+        <p>&copy; 2026 Domain Email Scraper &middot; For ethical and authorized use only</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
